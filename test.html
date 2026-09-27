@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic English Test</title>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; background-color: #f0fdf4; color: #1e293b; line-height: 1.6; }
+        .card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h1 { text-align: center; color: #047857; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #64748b; margin-bottom: 30px; }
+        
+        h2 { color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-top: 30px; }
+        .question-block { margin-bottom: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #059669; }
+        .question-text { font-weight: 600; margin-bottom: 10px; font-size: 1.1em; }
+        
+        input[type="text"] { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1em; width: 100%; max-width: 400px; box-sizing: border-box; }
+        .radio-label { display: block; margin-bottom: 8px; cursor: pointer; }
+        input[type="radio"] { margin-right: 8px; cursor: pointer; }
+
+        .btn-container { text-align: center; margin-top: 30px; gap: 15px; display: flex; justify-content: center; }
+        button { padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 1em; color: white; }
+        .btn-submit { background-color: #059669; }
+        .btn-retake { background-color: #2563eb; }
+        .btn-quit { background-color: #ef4444; }
+        .btn-play { background-color: #8b5cf6; padding: 6px 12px; font-size: 0.9em; margin-bottom: 10px; }
+        .btn-read-all { background-color: #f59e0b; font-size: 1.1em; padding: 12px 24px; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.2); }
+        button:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+        #resultPanel { display: none; text-align: center; background: #dcfce7; border: 2px solid #22c55e; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        .score-text { font-size: 2.5em; font-weight: bold; color: #166534; }
+        .feedback { display: block; margin-top: 8px; font-weight: bold; }
+        .correct { color: #16a34a; }
+        .wrong { color: #dc2626; }
+        .ans-hint { color: #059669; font-size: 0.9em; margin-top: 5px; background: #d1fae5; padding: 4px 8px; border-radius: 4px; display: inline-block; }
+        
+        .scramble-box { background: #fffbeb; color: #b45309; border: 1px dashed #fcd34d; padding: 10px 15px; border-radius: 8px; display: inline-block; margin-bottom: 10px; font-size: 1.1em; font-weight: 500; }
+        
+        /* 全文朗讀區塊 */
+        .audio-header { text-align: center; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 2px dashed #cbd5e1; }
+    </style>
+</head>
+<body>
+
+    <div class="card" id="introScreen">
+        <h1>📝 Auto-Generated Practice Test</h1>
+        <p class="subtitle" id="statusMsg">Loading article data...</p>
+        <div class="btn-container" id="startBtnContainer" style="display: none;">
+            <button class="btn-submit" onclick="startTest()">Start Test Now</button>
+        </div>
+    </div>
+
+    <div id="resultPanel">
+        <h2>Test Results</h2>
+        <div class="score-text" id="scoreDisplay">0 / 0</div>
+        <p id="scoreMessage"></p>
+        <div class="btn-container">
+            <button class="btn-retake" onclick="startTest()">🔄 Generate New Test</button>
+            <button class="btn-quit" onclick="window.close()">🚪 Quit</button>
+        </div>
+    </div>
+
+    <div class="card" id="testSheet" style="display: none;">
+        
+        <!-- 全文朗讀按鈕區塊 -->
+        <div class="audio-header">
+            <h3 style="margin-top: 0; color: #475569;">Listen to the Article Before You Start</h3>
+            <button class="btn-read-all" id="btnReadAll" onclick="toggleFullArticleAudio()">📢 聽全文朗讀</button>
+        </div>
+
+        <div id="questionsContainer"></div>
+        
+        <div class="btn-container">
+            <button class="btn-submit" id="btnSubmitTest" onclick="submitTest()">✅ Submit Answers</button>
+        </div>
+    </div>
+
+    <script>
+        // === DYNAMIC ENGINE ===
+        let currentAnswers = {};
+        let totalQuestions = 0;
+        let articleSentences = [];
+        let uniqueWords = [];
+        const synth = window.speechSynthesis;
+        
+        // 音訊控制狀態
+        let isReadingFull = false;
+
+        window.onload = () => {
+            const rawText = sessionStorage.getItem('dynamicArticle');
+            const statusMsg = document.getElementById('statusMsg');
+
+            if (!rawText || rawText.trim() === "") {
+                statusMsg.innerHTML = "❌ <strong style='color:red;'>No article found!</strong><br>Please go back to the main page, upload an article, and select it from the dropdown first.";
+                return;
+            }
+
+            const cleanText = rawText.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ');
+            articleSentences = (cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText]).map(s => s.trim()).filter(s => s.length > 15);
+            
+            const wordsRaw = cleanText.match(/\b[a-zA-Z]{4,}\b/g) || [];
+            uniqueWords = [...new Set(wordsRaw.map(w => w.toLowerCase()))];
+
+            if (articleSentences.length < 3 || uniqueWords.length < 5) {
+                statusMsg.innerHTML = "⚠️ The selected article is too short to generate a test. Please choose a longer article.";
+                return;
+            }
+
+            statusMsg.innerHTML = `✅ Successfully loaded article! Found ${articleSentences.length} sentences and ${uniqueWords.length} vocabularies.`;
+            document.getElementById('startBtnContainer').style.display = 'flex';
+        };
+
+        const shuffle = arr => arr.sort(() => Math.random() - 0.5);
+        const getRandom = (arr, n) => shuffle([...arr]).slice(0, Math.min(n, arr.length));
+
+        function startTest() {
+            document.getElementById('introScreen').style.display = 'none';
+            document.getElementById('resultPanel').style.display = 'none';
+            document.getElementById('testSheet').style.display = 'block';
+            document.getElementById('btnSubmitTest').style.display = 'inline-block';
+            window.scrollTo(0, 0);
+            
+            // 確保每次重新開始測驗時，停止所有語音
+            synth.cancel();
+            resetAudioButton();
+
+            currentAnswers = {};
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+
+            const qCount = Math.min(10, Math.max(3, Math.floor(articleSentences.length / 2)));
+
+            generateMCQ(container, qCount);
+            generateFill(container, qCount);
+            generateSentenceScramble(container, qCount);
+            generateDictation(container, qCount);
+
+            totalQuestions = Object.keys(currentAnswers).length;
+        }
+
+        // === AUDIO FUNCTIONS ===
+        function toggleFullArticleAudio() {
+            const btn = document.getElementById('btnReadAll');
+            if (isReadingFull) {
+                synth.cancel();
+                resetAudioButton();
+            } else {
+                synth.cancel(); // 停止其他可能正在播放的聲音 (例如聽寫題)
+                const textToRead = articleSentences.join(" ");
+                let utterance = new SpeechSynthesisUtterance(textToRead);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.85;
+                
+                utterance.onend = () => {
+                    resetAudioButton();
+                };
+
+                synth.speak(utterance);
+                isReadingFull = true;
+                btn.innerText = "⏹ 停止朗讀全文";
+                btn.style.backgroundColor = "#ef4444"; // 變紅色
+            }
+        }
+
+        function resetAudioButton() {
+            isReadingFull = false;
+            const btn = document.getElementById('btnReadAll');
+            if (btn) {
+                btn.innerText = "📢 聽全文朗讀";
+                btn.style.backgroundColor = "#f59e0b"; // 恢復橘黃色
+            }
+        }
+
+        function playAudio(text) {
+            synth.cancel(); // 播放聽寫題時，強制停止全文朗讀
+            resetAudioButton();
+            let u = new SpeechSynthesisUtterance(text);
+            u.lang = 'en-US'; u.rate = 0.85;
+            synth.speak(u);
+        }
+
+        // === QUESTION GENERATORS ===
+        function generateMCQ(container, count) {
+            let sentences = getRandom(articleSentences, count);
+            let html = `<h2>Part 1: Contextual Vocabulary (Multiple Choice)</h2>`;
+            
+            sentences.forEach((s, i) => {
+                let tokens = s.match(/\b[a-zA-Z]{4,}\b/g);
+                if(!tokens) return;
+                let targetWord = getRandom(tokens, 1)[0];
+                let distractors = getRandom(uniqueWords.filter(w => w !== targetWord.toLowerCase()), 3);
+                let options = shuffle([targetWord.toLowerCase(), ...distractors]);
+                
+                let qId = `mcq_${i}`;
+                currentAnswers[qId] = { type: 'mcq', correct: options.indexOf(targetWord.toLowerCase()).toString() };
+                
+                let displaySentence = s.replace(new RegExp(`\\b${targetWord}\\b`, 'i'), '________');
+                
+                html += `<div class="question-block">
+                            <div class="question-text">${i + 1}. ${displaySentence}</div>`;
+                options.forEach((opt, optIdx) => {
+                    html += `<label class="radio-label"><input type="radio" name="${qId}" value="${optIdx}"> ${opt}</label>`;
+                });
+                html += `<div class="feedback" id="feedback_${qId}"></div></div>`;
+            });
+            container.innerHTML += html;
+        }
+
+        function generateFill(container, count) {
+            let sentences = getRandom(articleSentences, count);
+            let html = `<h2>Part 2: Fill in the Blanks</h2>`;
+            
+            sentences.forEach((s, i) => {
+                let tokens = s.match(/\b[a-zA-Z]{4,}\b/g);
+                if(!tokens) return;
+                let targetWord = getRandom(tokens, 1)[0];
+                
+                let qId = `fill_${i}`;
+                currentAnswers[qId] = { type: 'text', correct: targetWord.toLowerCase() };
+                let displaySentence = s.replace(new RegExp(`\\b${targetWord}\\b`, 'i'), `<input type="text" id="${qId}" style="width:120px; padding: 4px;" autocomplete="off">`);
+                
+                html += `<div class="question-block">
+                            <div class="question-text">${i + 1}. ${displaySentence}</div>
+                            <div class="feedback" id="feedback_${qId}"></div>
+                         </div>`;
+            });
+            container.innerHTML += html;
+        }
+
+        function generateSentenceScramble(container, count) {
+            let shortSentences = articleSentences.filter(s => {
+                let wordCount = s.trim().split(/\s+/).length;
+                return wordCount >= 4 && wordCount <= 15;
+            });
+            
+            if (shortSentences.length < count) shortSentences = articleSentences;
+            let sentences = getRandom(shortSentences, count);
+            let html = `<h2>Part 3: Sentence Unscramble (句子重組)</h2>`;
+            
+            sentences.forEach((s, i) => {
+                let qId = `scramble_sent_${i}`;
+                let cleanAns = s.toLowerCase().replace(/[.,!?\"'()]/g, '').replace(/\s+/g, ' ').trim();
+                currentAnswers[qId] = { type: 'sent_scramble', correct: cleanAns, original: s };
+                
+                let wordsToShuffle = s.replace(/[.,!?\"'()]/g, '').trim().split(/\s+/);
+                let scrambledWords = shuffle([...wordsToShuffle]).join(' / ');
+                
+                html += `<div class="question-block">
+                            <div class="question-text">${i + 1}. Put the words in correct order:</div>
+                            <div class="scramble-box">${scrambledWords}</div><br>
+                            <input type="text" id="${qId}" placeholder="Type the full sentence..." autocomplete="off" style="max-width: 100%;">
+                            <div class="feedback" id="feedback_${qId}"></div>
+                         </div>`;
+            });
+            container.innerHTML += html;
+        }
+
+        function generateDictation(container, count) {
+            let sentences = getRandom(articleSentences.filter(s => s.length < 100), count); 
+            let html = `<h2>Part 4: Listening Dictation (Type the sentence)</h2>`;
+            
+            sentences.forEach((s, i) => {
+                let qId = `dict_${i}`;
+                let cleanAns = s.toLowerCase().replace(/[.,!?\"'()]/g, '').replace(/\s+/g, ' ').trim();
+                currentAnswers[qId] = { type: 'dict', correct: cleanAns, original: s };
+                
+                html += `<div class="question-block">
+                            <div class="question-text">${i + 1}. Listen and type what you hear:</div>
+                            <button class="btn-play" onclick="playAudio('${s.replace(/'/g, "\\'")}')">🔊 Play Audio</button><br>
+                            <input type="text" id="${qId}" placeholder="Type the full sentence here..." autocomplete="off" style="max-width: 100%;">
+                            <div class="feedback" id="feedback_${qId}"></div>
+                         </div>`;
+            });
+            container.innerHTML += html;
+        }
+
+        // === SUBMIT & GRADE ===
+        function submitTest() {
+            synth.cancel(); // 繳交考卷時停止所有語音
+            resetAudioButton();
+            
+            let score = 0;
+            for (let qId in currentAnswers) {
+                let data = currentAnswers[qId];
+                let isCorrect = false;
+                let fb = document.getElementById(`feedback_${qId}`);
+
+                if (data.type === 'mcq') {
+                    let sel = document.querySelector(`input[name="${qId}"]:checked`);
+                    if (sel && sel.value === data.correct) isCorrect = true;
+                    document.querySelectorAll(`input[name="${qId}"]`).forEach(e => e.disabled = true);
+                } 
+                else if (data.type === 'text') { 
+                    let input = document.getElementById(qId);
+                    if (input.value.trim().toLowerCase() === data.correct) isCorrect = true;
+                    input.disabled = true;
+                }
+                else if (data.type === 'sent_scramble' || data.type === 'dict') { 
+                    let input = document.getElementById(qId);
+                    let userText = input.value.trim().toLowerCase().replace(/[.,!?\"'()]/g, '').replace(/\s+/g, ' ');
+                    if (userText === data.correct) isCorrect = true;
+                    input.disabled = true;
+                }
+
+                if (isCorrect) {
+                    score++;
+                    fb.innerHTML = `<span class="correct">✔ Correct</span>`;
+                } else {
+                    let ansText = (data.type === 'dict' || data.type === 'sent_scramble') 
+                        ? data.original 
+                        : (data.type === 'mcq' ? document.querySelector(`input[name="${qId}"][value="${data.correct}"]`).nextSibling.textContent.trim() : data.correct);
+                    fb.innerHTML = `<span class="wrong">✘ Incorrect.</span> <span class="ans-hint">Answer: ${ansText}</span>`;
+                }
+            }
+
+            document.getElementById('btnSubmitTest').style.display = 'none';
+            let panel = document.getElementById('resultPanel');
+            document.getElementById('scoreDisplay').innerText = `${score} / ${totalQuestions}`;
+            
+            let pct = score / totalQuestions;
+            let msg = pct === 1 ? "Perfect! Outstanding job! 🎉" : (pct >= 0.7 ? "Great job! Keep it up! 👍" : "Good effort! Let's review the answers. 💪");
+            document.getElementById('scoreMessage').innerText = msg;
+            
+            panel.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
