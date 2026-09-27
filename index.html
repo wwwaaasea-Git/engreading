@@ -3,409 +3,326 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>英文閱讀口說練習器 (批次選單版)</title>
+    <title>英文教材練習器 - 步驟二修正版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; }
-        h1 { text-align: center; color: #333; }
-        .upload-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f8fafc; color: #1e293b; }
+        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #e2e8f0; }
+        h1 { text-align: center; color: #0f172a; }
         
-        input[type="file"] { margin-bottom: 15px; font-size: 1em; }
-        select { padding: 8px 15px; font-size: 1.1em; border-radius: 5px; border: 1px solid #ccc; width: 80%; max-width: 500px; cursor: pointer; }
-        select:disabled { background-color: #eee; cursor: not-allowed; }
+        .step-box { padding: 15px; border-bottom: 1px solid #f1f5f9; margin-bottom: 10px; }
+        .step-title { font-size: 1.1em; font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
         
-        #textDisplay { background: white; height: 350px; overflow-y: auto; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); line-height: 1.8; font-size: 1.1em; margin-bottom: 20px; border: 1px solid #ddd; }
-        .sentence { cursor: pointer; border-radius: 4px; padding: 2px 4px; transition: background-color 0.2s; }
-        .sentence:hover { background-color: #f0f0f0; }
-        .highlight { background-color: #fff176; font-weight: bold; color: #000; }
+        input[type="file"] { padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; width: 100%; cursor: pointer; background: #fff; }
+        select { width: 100%; padding: 12px; font-size: 1.1em; border-radius: 8px; border: 2px solid #cbd5e1; cursor: pointer; background-color: #ffffff; }
+        select:focus { border-color: #2563eb; outline: none; }
 
-        .controls-section { display: flex; flex-direction: column; gap: 15px; }
-        .panel { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }
-        button { padding: 10px 15px; border: none; border-radius: 5px; background-color: #4CAF50; color: white; cursor: pointer; font-size: 1em; transition: 0.3s; }
-        button:hover { background-color: #45a049; }
-        button:disabled { background-color: #cccccc; cursor: not-allowed; }
-        .btn-record { background-color: #f44336; }
-        .btn-record:hover { background-color: #da190b; }
-        .btn-stop { background-color: #ff9800; }
-        .btn-dictation { background-color: #9c27b0; }
-        .btn-dictation:hover { background-color: #7b1fa2; }
-        
-        #audioPlayback { margin-top: 10px; display: none; width: 100%; }
+        #textDisplay { background: white; height: 350px; overflow-y: auto; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; line-height: 2; font-size: 1.25em; margin-bottom: 20px; }
+        .sentence { cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: 0.2s; border-bottom: 2px solid transparent; }
+        .sentence:hover { background-color: #f1f5f9; color: #2563eb; }
+        .highlight { background-color: #fef08a; font-weight: bold; border-bottom-color: #eab308; color: #000; }
 
-        /* 聽寫彈出視窗 */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
-        .modal-content { background-color: #fff; margin: 10% auto; padding: 30px; border-radius: 10px; width: 90%; max-width: 600px; text-align: center; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        .close-btn { color: #aaa; position: absolute; top: 10px; right: 15px; font-size: 28px; font-weight: bold; cursor: pointer; }
-        .close-btn:hover { color: #333; }
-        #dictationText { font-size: 1.3em; margin: 20px 0; line-height: 2; }
-        .dictation-input { font-size: 1em; padding: 5px; width: 100px; border: none; border-bottom: 2px solid #9c27b0; outline: none; text-align: center; background-color: #f9f9f9; margin: 0 5px; }
-        .dictation-input:focus { background-color: #fff; border-bottom: 2px solid #4CAF50; }
-        #dictationFeedback { color: #f44336; font-weight: bold; min-height: 24px; margin-bottom: 15px; }
-        #btnReplayDictation { background-color: #2196F3; margin-top: 10px; }
+        .control-panel { display: flex; flex-direction: column; gap: 15px; align-items: center; }
+        .btn-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        
+        button { padding: 12px 18px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.95em; }
+        .btn-nav { background-color: #64748b; color: white; }
+        .btn-play { background-color: #2563eb; color: white; }
+        .btn-pause { background-color: #f59e0b; color: white; }
+        .btn-stop { background-color: #ef4444; color: white; }
+        .btn-record { background-color: #dc2626; color: white; }
+        .btn-dict { background-color: #9333ea; color: white; }
+        
+        button:hover { filter: brightness(1.1); }
+        .recording-on { animation: pulse 1.5s infinite; background-color: #b91c1c !important; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
+        #audioPlayback { width: 100%; margin-top: 15px; display: none; }
+
+        /* 聽寫視窗 */
+        .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
+        .modal-content { background: white; margin: 10% auto; padding: 30px; border-radius: 20px; width: 90%; max-width: 600px; text-align: center; position: relative; }
+        .dictation-input { font-size: 1.1em; padding: 5px; width: 110px; border: none; border-bottom: 2px solid #9333ea; text-align: center; outline: none; margin: 0 5px; }
     </style>
 </head>
 <body>
 
-    <h1>英文閱讀口說練習器</h1>
+    <div class="card">
+        <h1>🎧 英文教材互動練習器</h1>
 
-    <div class="upload-section">
-        <div>
-            <label for="fileInput"><strong>📁 步驟一：選擇文章檔案 (可一次選擇多個 .docx 或 .txt)</strong></label><br><br>
+        <div class="step-box">
+            <div class="step-title">📂 步驟一：選擇文章檔案 (.docx 或 .txt)</div>
             <input type="file" id="fileInput" accept=".docx, .txt" multiple>
         </div>
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
-        <div>
-            <label for="articleSelect"><strong>📄 步驟二：從選單中挑選要練習的文章</strong></label><br><br>
+
+        <div class="step-box">
+            <div class="step-title">📄 步驟二：從選單中挑選要練習的文章</div>
             <select id="articleSelect" disabled>
-                <option value="">-- 請先從上方上傳檔案 --</option>
+                <option value="">-- 請先完成步驟一上傳檔案 --</option>
             </select>
         </div>
     </div>
 
-    <div id="textDisplay">
-        <p style="color: #999; text-align: center; margin-top: 150px;">載入文章後，內容會顯示在這裡...</p>
+    <div id="textDisplay" class="card">
+        <p style="color: #94a3b8; text-align: center; margin-top: 140px;">尚未載入文章內容</p>
     </div>
 
-    <div class="controls-section">
-        <div class="panel">
-            <strong>語音播放：</strong>
-            <button id="btnPrev">⏮ 上一句</button>
-            <button id="btnPlay">▶ 播放</button>
-            <button id="btnPause">⏸ 暫停</button>
-            <button id="btnStop">⏹ 停止</button>
-            <button id="btnNext">⏭ 下一句</button>
+    <div class="card control-panel">
+        <div class="btn-row">
+            <button class="btn-nav" onclick="changeSentence(-1)">⏮ 上一句</button>
+            <button class="btn-play" id="btnPlayAll">▶ 播放全文</button>
+            <button class="btn-pause" onclick="pauseSpeech()">⏸ 暫停</button>
+            <button class="btn-stop" onclick="stopSpeech()">⏹ 停止</button>
+            <button class="btn-nav" onclick="changeSentence(1)">⏭ 下一句</button>
+            <button class="btn-dict" style="background-color: #059669;" onclick="window.open('https://wwwaaasea-git.github.io/engreading/test.html/', '_blank')">📝 綜合練習測驗</button>
         </div>
 
-        <div class="panel">
-            <strong>互動練習：</strong>
-            <button id="btnRecord" class="btn-record">⏺ 開始錄音</button>
-            <button id="btnStopRecord" class="btn-stop" disabled>⏹ 停止錄音</button>
-            <button id="btnStartDictation" class="btn-dictation">📝 聽寫測驗</button>
-            <audio id="audioPlayback" controls></audio>
+        <div class="btn-row">
+            <button class="btn-record" id="btnRecord">⏺ 開始錄音練習</button>
+            <button class="btn-dict" id="btnStartDict">📝 聽寫測驗挑戰</button>
         </div>
+
+        <audio id="audioPlayback" controls></audio>
     </div>
 
     <div id="dictationModal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" id="btnCloseDictation">&times;</span>
-            <h2>聽寫測驗 (Listen & Fill)</h2>
-            <div id="dictationText"></div>
-            <p id="dictationFeedback"></p>
-            <button id="btnReplayDictation">🔄 再聽一次句子</button>
+            <span style="position:absolute; top:15px; right:20px; font-size:30px; cursor:pointer;" onclick="closeDict()">&times;</span>
+            <h2 style="color: #9333ea;">Listen & Write</h2>
+            <div id="dictationText" style="font-size: 1.4em; margin: 25px 0; line-height: 2;"></div>
+            <p id="dictationFeedback" style="font-weight:bold;"></p>
+            <button class="btn-play" style="margin: 0 auto;" onclick="speakDict()">🔄 再聽一次</button>
         </div>
     </div>
 
     <script>
-        // === 檔案暫存區 ===
-        let uploadedFilesMap = {}; // 用來儲存所有上傳的檔案物件
-
-        const fileInput = document.getElementById('fileInput');
-        const articleSelect = document.getElementById('articleSelect');
-        const textDisplay = document.getElementById('textDisplay');
-        
+        // --- 全域變數 ---
+        let fileStore = {}; 
         let sentences = [];
-        let currentSentenceIndex = -1;
-        let isPlaying = false;
+        let currentIdx = 0;
+        let isAutoPlaying = false;
         const synth = window.speechSynthesis;
-        let utterance = null;
 
-        // === 監聽檔案上傳 (支援多選) ===
-        fileInput.addEventListener('change', function(e) {
+        // --- 修正步驟一：上傳與選單更新 ---
+        document.getElementById('fileInput').addEventListener('change', function(e) {
             const files = e.target.files;
             if (files.length === 0) return;
-
-            // 如果選單原本是鎖定的，解鎖並清空預設文字
-            if (articleSelect.disabled) {
-                articleSelect.innerHTML = '<option value="" disabled selected>-- 請選擇文章 --</option>';
-                articleSelect.disabled = false;
-            }
-
-            // 將新選擇的檔案加入選單
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                // 避免重複加入同名檔案
-                if (!uploadedFilesMap[file.name]) {
-                    uploadedFilesMap[file.name] = file;
-                    
-                    const option = document.createElement('option');
-                    option.value = file.name;
-                    option.textContent = file.name;
-                    articleSelect.appendChild(option);
-                }
-            }
             
-            // 上傳完後清空 input 的值，這樣重複選同一個檔案也能觸發 change 事件
-            fileInput.value = ''; 
-            alert(`成功加入文章到選單中！`);
+            const select = document.getElementById('articleSelect');
+            select.innerHTML = '<option value="" disabled selected>-- 點擊此處選擇文章 --</option>';
+            
+            for (let file of files) {
+                fileStore[file.name] = file;
+                let opt = document.createElement('option');
+                opt.value = file.name;
+                opt.textContent = file.name;
+                select.appendChild(opt);
+            }
+            select.disabled = false;
+            alert("檔案已準備就緒，請執行「步驟二」選擇文章！");
         });
 
-        // === 監聽選單切換，讀取並解析文章 ===
-        articleSelect.addEventListener('change', function() {
+        // --- 修正步驟二：選單執行邏輯 ---
+        document.getElementById('articleSelect').addEventListener('change', function() {
             const fileName = this.value;
-            const file = uploadedFilesMap[fileName];
+            const file = fileStore[fileName];
             if (!file) return;
 
+            // 確保停止所有正在進行的播放
+            stopSpeech();
+            document.getElementById('textDisplay').innerHTML = '<p style="text-align: center; margin-top: 140px;">正在解析內容...</p>';
+
             const reader = new FileReader();
-
-            textDisplay.innerHTML = '<p style="text-align: center; margin-top: 150px;">載入中...</p>';
-
-            if (file.name.endsWith('.docx')) {
-                reader.onload = function(event) {
-                    mammoth.extractRawText({arrayBuffer: event.target.result})
-                        .then(result => processText(result.value))
+            
+            if (file.name.toLowerCase().endsWith('.docx')) {
+                reader.onload = function(e) {
+                    mammoth.extractRawText({ arrayBuffer: e.target.result })
+                        .then(result => {
+                            if (result.value.trim() === "") throw new Error("文件內容為空");
+                            processTextToSentences(result.value);
+                        })
                         .catch(err => {
                             console.error(err);
-                            alert("解析 DOCX 發生錯誤");
+                            document.getElementById('textDisplay').innerHTML = '<p style="color:red; text-align:center;">解析錯誤，請確認檔案格式</p>';
                         });
                 };
                 reader.readAsArrayBuffer(file);
-            } else if (file.name.endsWith('.txt')) {
-                reader.onload = event => processText(event.target.result);
+            } else {
+                reader.onload = function(e) {
+                    processTextToSentences(e.target.result);
+                };
                 reader.readAsText(file);
             }
         });
 
-        // === 處理文字與斷句 ===
-        function processText(text) {
-            synth.cancel(); 
-            isPlaying = false;
-            
-            const regex = /[^.!?]+[.!?]+/g;
-            sentences = text.match(regex);
-            if (!sentences) sentences = [text]; 
+        function processTextToSentences(text) {
+            // 【新增這一行】將當前文章存入瀏覽器空間，供 test.html 讀取
+            sessionStorage.setItem('dynamicArticle', text); 
 
-            textDisplay.innerHTML = '';
-            sentences.forEach((sentence, index) => {
-                const span = document.createElement('span');
+            // 原本的程式碼保持不變
+
+            // 基礎斷句邏輯
+            sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+            const display = document.getElementById('textDisplay');
+            display.innerHTML = '';
+            
+            sentences.forEach((s, i) => {
+                let span = document.createElement('span');
                 span.className = 'sentence';
-                span.id = `sentence-${index}`;
-                span.innerText = sentence.trim() + ' ';
-                span.onclick = () => {
-                    currentSentenceIndex = index;
-                    playSentence(currentSentenceIndex);
-                };
-                textDisplay.appendChild(span);
+                span.id = 's-' + i;
+                span.innerText = s.trim() + ' ';
+                span.onclick = () => { isAutoPlaying = false; currentIdx = i; playSentence(); };
+                display.appendChild(span);
             });
-            currentSentenceIndex = 0;
-            resetHighlight();
+            currentIdx = 0;
         }
 
-        // === 語音播放相關 ===
-        function playSentence(index, autoNext = true) {
-            if (index < 0 || index >= sentences.length) {
-                isPlaying = false;
-                return;
-            }
+        // --- 播放功能 ---
+        function playSentence() {
             synth.cancel();
-            resetHighlight();
-
-            const targetSpan = document.getElementById(`sentence-${index}`);
-            if(targetSpan) {
-                targetSpan.classList.add('highlight');
-                targetSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            document.querySelectorAll('.sentence').forEach(el => el.classList.remove('highlight'));
+            const target = document.getElementById('s-' + currentIdx);
+            if (target) {
+                target.classList.add('highlight');
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
 
-            utterance = new SpeechSynthesisUtterance(sentences[index]);
-            utterance.lang = 'en-US'; 
-            utterance.rate = 0.85; 
-            
-            utterance.onend = function() {
-                if (isPlaying && autoNext) {
-                    currentSentenceIndex++;
-                    playSentence(currentSentenceIndex);
+            const utter = new SpeechSynthesisUtterance(sentences[currentIdx]);
+            utter.lang = 'en-US';
+            utter.rate = 0.9;
+            utter.onend = () => {
+                if (isAutoPlaying && currentIdx < sentences.length - 1) {
+                    currentIdx++;
+                    playSentence();
+                } else {
+                    isAutoPlaying = false;
                 }
             };
-            synth.speak(utterance);
+            synth.speak(utter);
         }
 
-        function resetHighlight() { document.querySelectorAll('.sentence').forEach(el => el.classList.remove('highlight')); }
+        document.getElementById('btnPlayAll').onclick = () => {
+            if (sentences.length === 0) return alert("請先選擇文章！");
+            isAutoPlaying = true;
+            if (synth.paused) synth.resume();
+            else playSentence();
+        };
 
-        document.getElementById('btnPlay').addEventListener('click', () => {
-            if (sentences.length === 0) return alert('請先從選單選擇文章！');
-            if (synth.paused) { synth.resume(); isPlaying = true; } 
-            else { isPlaying = true; playSentence(currentSentenceIndex); }
-        });
-        document.getElementById('btnPause').addEventListener('click', () => { synth.pause(); isPlaying = false; });
-        document.getElementById('btnStop').addEventListener('click', () => { synth.cancel(); isPlaying = false; resetHighlight(); currentSentenceIndex = 0; });
-        document.getElementById('btnNext').addEventListener('click', () => { synth.cancel(); if (currentSentenceIndex < sentences.length - 1) { currentSentenceIndex++; playSentence(currentSentenceIndex); }});
-        document.getElementById('btnPrev').addEventListener('click', () => { synth.cancel(); if (currentSentenceIndex > 0) { currentSentenceIndex--; playSentence(currentSentenceIndex); }});
-
-        // === 錄音功能 ===
-        let mediaRecorder;
-        let audioChunks = [];
-        const btnRecord = document.getElementById('btnRecord');
-        const btnStopRecord = document.getElementById('btnStopRecord');
-        const audioPlayback = document.getElementById('audioPlayback');
-
-        btnRecord.addEventListener('click', async () => {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
-                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-                mediaRecorder.onstop = () => {
-                    audioPlayback.src = URL.createObjectURL(new Blob(audioChunks, { type: 'audio/webm' }));
-                    audioPlayback.style.display = 'block';
-                };
-                mediaRecorder.start();
-                btnRecord.disabled = true; btnRecord.innerText = "⏺ 錄音中..."; btnStopRecord.disabled = false;
-            } catch (err) { alert('無法存取麥克風。'); }
-        });
-
-        btnStopRecord.addEventListener('click', () => {
-            if (mediaRecorder && mediaRecorder.state !== "inactive") {
-                mediaRecorder.stop();
-                btnRecord.disabled = false; btnRecord.innerText = "⏺ 開始錄音"; btnStopRecord.disabled = true;
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
-            }
-        });
-
-        // === 多空格聽寫測驗 ===
-        const modal = document.getElementById('dictationModal');
-        const btnStartDictation = document.getElementById('btnStartDictation');
-        const btnCloseDictation = document.getElementById('btnCloseDictation');
-        const dictationTextContainer = document.getElementById('dictationText');
-        const dictationFeedback = document.getElementById('dictationFeedback');
-        const btnReplayDictation = document.getElementById('btnReplayDictation');
-        
-        let dictIndex = 0;
-        let targetWordsList = []; 
-        let solvedCount = 0;      
-        let totalBlanks = 0;      
-
-        function playErrorSound() {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if(!AudioContext) return;
-            const ctx = new AudioContext();
-            const osc = ctx.createOscillator();
-            const gainNode = ctx.createGain();
-            osc.type = 'sawtooth'; 
-            osc.frequency.setValueAtTime(150, ctx.currentTime);
-            gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-            osc.connect(gainNode);
-            gainNode.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.3);
-        }
-
-        btnStartDictation.addEventListener('click', () => {
-            if (sentences.length === 0) return alert('請先從選單選擇文章！');
+        function pauseSpeech() { isAutoPlaying = false; synth.pause(); }
+        function stopSpeech() { 
+            isAutoPlaying = false; 
             synth.cancel(); 
-            isPlaying = false;
-            dictIndex = 0;
+            document.querySelectorAll('.sentence').forEach(el => el.classList.remove('highlight'));
+        }
+
+        function changeSentence(step) {
+            isAutoPlaying = false;
+            let next = currentIdx + step;
+            if (next >= 0 && next < sentences.length) {
+                currentIdx = next;
+                playSentence();
+            }
+        }
+
+        // --- 錄音功能 ---
+        let recorder;
+        let chunks = [];
+        const recBtn = document.getElementById('btnRecord');
+        const playBar = document.getElementById('audioPlayback');
+
+        recBtn.onclick = async () => {
+            if (!recorder || recorder.state === "inactive") {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    recorder = new MediaRecorder(stream);
+                    chunks = [];
+                    recorder.ondataavailable = e => chunks.push(e.data);
+                    recorder.onstop = () => {
+                        const blob = new Blob(chunks, { type: 'audio/webm' });
+                        playBar.src = URL.createObjectURL(blob);
+                        playBar.style.display = 'block';
+                    };
+                    recorder.start();
+                    recBtn.innerText = "⏹ 停止錄音";
+                    recBtn.classList.add('recording-on');
+                } catch (e) { alert("無法開啟麥克風。"); }
+            } else {
+                recorder.stop();
+                recBtn.innerText = "⏺ 開始錄音練習";
+                recBtn.classList.remove('recording-on');
+                recorder.stream.getTracks().forEach(t => t.stop());
+            }
+        };
+
+        // --- 聽寫測驗 ---
+        let dictWords = [];
+        let solved = 0;
+        const modal = document.getElementById('dictationModal');
+
+        document.getElementById('btnStartDict').onclick = () => {
+            if (sentences.length === 0) return;
+            stopSpeech();
+            currentIdx = 0;
             modal.style.display = 'block';
-            loadDictationSentence();
-        });
+            loadDict();
+        };
 
-        btnCloseDictation.addEventListener('click', () => {
-            modal.style.display = 'none';
+        function loadDict() {
+            const feedback = document.getElementById('dictationFeedback');
+            feedback.innerText = '';
+            if (currentIdx >= sentences.length) {
+                document.getElementById('dictationText').innerText = "🎉 恭喜完成全文挑戰！";
+                return;
+            }
+            speakDict();
+
+            let s = sentences[currentIdx].trim();
+            let tokens = s.match(/([a-zA-Z']+)|([^a-zA-Z']+)/g);
+            let indices = [];
+            tokens.forEach((t, i) => { if(/[a-zA-Z]{3,}/.test(t)) indices.push(i); });
+
+            let count = Math.min(indices.length, indices.length >= 6 ? 3 : 1);
+            let picks = indices.sort(() => 0.5 - Math.random()).slice(0, count).sort((a,b)=>a-b);
+            
+            dictWords = []; solved = 0;
+            picks.forEach((idx, i) => {
+                dictWords.push(tokens[idx]);
+                tokens[idx] = `<input type="text" class="dictation-input" data-idx="${i}" autocomplete="off">`;
+            });
+
+            document.getElementById('dictationText').innerHTML = tokens.join('');
+            setTimeout(() => document.querySelector('.dictation-input')?.focus(), 100);
+
+            document.querySelectorAll('.dictation-input').forEach(input => {
+                input.onkeyup = (e) => {
+                    if (e.key === 'Enter') {
+                        let i = input.dataset.idx;
+                        if (input.value.trim().toLowerCase() === dictWords[i].toLowerCase()) {
+                            input.outerHTML = `<span style="color:#16a34a; font-weight:bold;">${dictWords[i]}</span>`;
+                            solved++;
+                            if (solved === count) {
+                                feedback.style.color = "#16a34a"; feedback.innerText = "Correct!";
+                                setTimeout(() => { currentIdx++; loadDict(); }, 1000);
+                            } else {
+                                document.querySelector('.dictation-input')?.focus();
+                            }
+                        } else {
+                            feedback.style.color = "#dc2626"; feedback.innerText = "Wrong spelling!";
+                            input.value = '';
+                        }
+                    }
+                };
+            });
+        }
+
+        function speakDict() {
             synth.cancel();
-        });
-
-        btnReplayDictation.addEventListener('click', speakCurrentDictationSentence);
-
-        function speakCurrentDictationSentence() {
-            synth.cancel();
-            let u = new SpeechSynthesisUtterance(sentences[dictIndex]);
-            u.lang = 'en-US';
-            u.rate = 0.8;
+            const u = new SpeechSynthesisUtterance(sentences[currentIdx]);
+            u.lang = 'en-US'; u.rate = 0.8;
             synth.speak(u);
         }
 
-        function loadDictationSentence() {
-            if (dictIndex >= sentences.length) {
-                dictationTextContainer.innerHTML = "🎉 恭喜你！完成所有聽寫測驗！";
-                dictationFeedback.innerText = "";
-                return;
-            }
-
-            dictationFeedback.innerText = "";
-            let sentence = sentences[dictIndex].trim();
-            speakCurrentDictationSentence();
-
-            const tokens = sentence.match(/([a-zA-Z']+)|([^a-zA-Z']+)/g);
-            let wordIndices = [];
-            
-            if(tokens) {
-                tokens.forEach((token, idx) => {
-                    if (/^[a-zA-Z']+$/.test(token) && token.length > 2) {
-                        wordIndices.push(idx);
-                    }
-                });
-            }
-
-            if (wordIndices.length === 0) {
-                dictIndex++;
-                loadDictationSentence();
-                return;
-            }
-
-            let blanksCount = 1;
-            if (wordIndices.length >= 10) blanksCount = 3;
-            else if (wordIndices.length >= 5) blanksCount = 2;
-            
-            blanksCount = Math.min(blanksCount, wordIndices.length);
-
-            let shuffledIndices = [...wordIndices].sort(() => 0.5 - Math.random());
-            let selectedIndices = shuffledIndices.slice(0, blanksCount).sort((a,b) => a - b);
-
-            targetWordsList = [];
-            solvedCount = 0;
-            totalBlanks = blanksCount;
-
-            selectedIndices.forEach((idx, i) => {
-                targetWordsList.push(tokens[idx]);
-                tokens[idx] = `<input type="text" class="dictation-input" autocomplete="off" data-ans-index="${i}" />`;
-            });
-
-            dictationTextContainer.innerHTML = tokens.join('');
-            
-            setTimeout(() => {
-                const inputs = document.querySelectorAll('.dictation-input');
-                if(inputs.length > 0) inputs[0].focus();
-
-                inputs.forEach(input => {
-                    input.addEventListener('keyup', function(e) {
-                        if (e.key === 'Enter') {
-                            let ansIdx = this.getAttribute('data-ans-index');
-                            let correctAnswer = targetWordsList[ansIdx];
-
-                            if (this.value.trim().toLowerCase() === correctAnswer.toLowerCase()) {
-                                dictationFeedback.style.color = "#4CAF50";
-                                dictationFeedback.innerText = "這個單字答對了！";
-                                
-                                let span = document.createElement('span');
-                                span.style.color = "#4CAF50";
-                                span.style.fontWeight = "bold";
-                                span.style.textDecoration = "underline";
-                                span.innerText = correctAnswer;
-                                this.parentNode.replaceChild(span, this);
-                                
-                                solvedCount++;
-
-                                if (solvedCount === totalBlanks) {
-                                    dictationFeedback.innerText = "太棒了！整句都答對了！";
-                                    setTimeout(() => {
-                                        dictIndex++;
-                                        loadDictationSentence();
-                                    }, 1200);
-                                } else {
-                                    const nextInput = document.querySelector('.dictation-input');
-                                    if(nextInput) nextInput.focus();
-                                }
-                            } else {
-                                playErrorSound();
-                                dictationFeedback.style.color = "#f44336";
-                                dictationFeedback.innerText = "錯誤！請再聽一次並修正拼寫。";
-                                this.value = ''; 
-                                this.focus();
-                            }
-                        }
-                    });
-                });
-            }, 50);
-        }
+        function closeDict() { modal.style.display = 'none'; synth.cancel(); }
     </script>
 </body>
-
 </html>
